@@ -4,7 +4,7 @@ import 'package:hive/hive.dart';
 part 'daily_summary.freezed.dart';
 
 @freezed
-class DailySummary with _$DailySummary {
+abstract class DailySummary with _$DailySummary {
   const factory DailySummary({
     required String date, // Format YYYY-MM-DD
     required int totalMl,

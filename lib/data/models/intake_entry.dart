@@ -4,7 +4,7 @@ import 'package:hive/hive.dart';
 part 'intake_entry.freezed.dart';
 
 @freezed
-class IntakeEntry with _$IntakeEntry {
+abstract class IntakeEntry with _$IntakeEntry {
   const factory IntakeEntry({
     required String id,
     required int amountMl,

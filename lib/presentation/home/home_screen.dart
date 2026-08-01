@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/router/app_router.dart';
+import 'bloc/home_cubit.dart';
+import 'bloc/home_state.dart';
 import 'widgets/progress_ring.dart';
 import 'widgets/preset_button.dart';
 import 'widgets/custom_input_dialog.dart';
@@ -10,11 +13,6 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Static dummy values for now
-    const int currentMl = 1200;
-    const int targetMl = 2500;
-    const double progress = currentMl / targetMl;
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Water Reminder'),
@@ -28,63 +26,72 @@ class HomeScreen extends StatelessWidget {
         ],
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Expanded(
-                child: Center(
-                  child: ProgressRing(
-                    progress: progress,
-                    currentMl: currentMl,
-                    targetMl: targetMl,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 32),
-              Text(
-                'Tambah Asupan Air',
-                style: Theme.of(context).textTheme.titleLarge,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        child: BlocBuilder<HomeCubit, HomeState>(
+          builder: (context, state) {
+            return Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Expanded(
-                    child: PresetButton(
-                      amount: 200,
-                      onPressed: () {},
+                    child: Center(
+                      child: ProgressRing(
+                        progress: state.progressPercent,
+                        currentMl: state.todayIntakeMl,
+                        targetMl: state.targetMl,
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: PresetButton(
-                      amount: 500,
-                      onPressed: () {},
-                    ),
+                  const SizedBox(height: 32),
+                  Text(
+                    'Tambah Asupan Air',
+                    style: Theme.of(context).textTheme.titleLarge,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      Expanded(
+                        child: PresetButton(
+                          amount: state.preset1Ml,
+                          onPressed: () {
+                            context.read<HomeCubit>().addIntake(state.preset1Ml);
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: PresetButton(
+                          amount: state.preset2Ml,
+                          onPressed: () {
+                            context.read<HomeCubit>().addIntake(state.preset2Ml);
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      final result = await showDialog<int>(
+                        context: context,
+                        builder: (context) => const CustomInputDialog(),
+                      );
+                      if (result != null && context.mounted) {
+                        context.read<HomeCubit>().addIntake(result);
+                      }
+                    },
+                    icon: const Icon(Icons.add),
+                    label: const Text('Input Manual'),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              OutlinedButton.icon(
-                onPressed: () async {
-                  final result = await showDialog<int>(
-                    context: context,
-                    builder: (context) => const CustomInputDialog(),
-                  );
-                  if (result != null) {
-                    // TODO: Handle manual input
-                  }
-                },
-                icon: const Icon(Icons.add),
-                label: const Text('Input Manual'),
-              ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
   }
 }
+
