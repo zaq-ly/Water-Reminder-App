@@ -10,7 +10,12 @@ abstract class UserSettings with _$UserSettings {
     @Default(TimeOfDay(hour: 8, minute: 0)) TimeOfDay wakeUpTime,
     @Default(TimeOfDay(hour: 22, minute: 0)) TimeOfDay sleepTime,
     @Default(true) bool notificationsEnabled,
-    @Default(90) int intervalMinutes,
+    @Default(30) int intervalMinutes,
     @Default(false) bool isPaused,
+    double? bodyWeightKg,
+    @Default(false) bool autoCalcTarget,
+    @Default(200) int preset1Ml,
+    @Default(300) int preset2Ml,
+    @Default(true) bool isFirstLaunch,
   }) = _UserSettings;
 }

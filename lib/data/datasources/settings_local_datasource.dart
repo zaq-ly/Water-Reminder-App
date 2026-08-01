@@ -13,6 +13,11 @@ class SettingsLocalDatasource {
   static const String _kNotificationsEnabled = 'notificationsEnabled';
   static const String _kIntervalMinutes = 'intervalMinutes';
   static const String _kIsPaused = 'isPaused';
+  static const String _kBodyWeightKg = 'bodyWeightKg';
+  static const String _kAutoCalcTarget = 'autoCalcTarget';
+  static const String _kPreset1Ml = 'preset1Ml';
+  static const String _kPreset2Ml = 'preset2Ml';
+  static const String _kIsFirstLaunch = 'isFirstLaunch';
 
   Future<UserSettings> getSettings() async {
     final prefs = await SharedPreferences.getInstance();
@@ -27,8 +32,13 @@ class SettingsLocalDatasource {
         minute: prefs.getInt(_kSleepMinute) ?? 0,
       ),
       notificationsEnabled: prefs.getBool(_kNotificationsEnabled) ?? true,
-      intervalMinutes: prefs.getInt(_kIntervalMinutes) ?? 90,
+      intervalMinutes: prefs.getInt(_kIntervalMinutes) ?? 30,
       isPaused: prefs.getBool(_kIsPaused) ?? false,
+      bodyWeightKg: prefs.getDouble(_kBodyWeightKg),
+      autoCalcTarget: prefs.getBool(_kAutoCalcTarget) ?? false,
+      preset1Ml: prefs.getInt(_kPreset1Ml) ?? 200,
+      preset2Ml: prefs.getInt(_kPreset2Ml) ?? 300,
+      isFirstLaunch: prefs.getBool(_kIsFirstLaunch) ?? true,
     );
   }
 
@@ -42,5 +52,14 @@ class SettingsLocalDatasource {
     await prefs.setBool(_kNotificationsEnabled, settings.notificationsEnabled);
     await prefs.setInt(_kIntervalMinutes, settings.intervalMinutes);
     await prefs.setBool(_kIsPaused, settings.isPaused);
+    if (settings.bodyWeightKg != null) {
+      await prefs.setDouble(_kBodyWeightKg, settings.bodyWeightKg!);
+    } else {
+      await prefs.remove(_kBodyWeightKg);
+    }
+    await prefs.setBool(_kAutoCalcTarget, settings.autoCalcTarget);
+    await prefs.setInt(_kPreset1Ml, settings.preset1Ml);
+    await prefs.setInt(_kPreset2Ml, settings.preset2Ml);
+    await prefs.setBool(_kIsFirstLaunch, settings.isFirstLaunch);
   }
 }

@@ -1,8 +1,148 @@
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:injectable/injectable.dart';
+import 'package:flutter/widgets.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import '../core/di/injection.dart';
+import '../data/models/intake_entry.dart';
+import '../data/models/daily_summary.dart';
+import '../domain/usecases/add_intake.dart';
+import '../domain/usecases/schedule_notification.dart';
+import '../domain/repositories/settings_repository.dart';
+import 'alarm_service.dart';
 
 @lazySingleton
 class NotificationService {
-  Future<void> init() async {}
-  Future<void> scheduleNextReminder(int intervalMinutes) async {}
-  Future<void> cancelAll() async {}
+  final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
+  final AlarmService _alarmService;
+
+  NotificationService(this._alarmService);
+
+  static const _channelId = 'water_reminder_channel';
+  static const _channelName = 'Pengingat Minum Air';
+  static const _channelDesc = 'Notifikasi pengingat untuk minum air secara rutin';
+
+  Future<void> init() async {
+    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const iosSettings = DarwinInitializationSettings(
+      requestAlertPermission: false,
+      requestBadgePermission: false,
+      requestSoundPermission: false,
+    );
+    const settings = InitializationSettings(
+      android: androidSettings,
+      iOS: iosSettings,
+    );
+
+    await _plugin.initialize(
+      settings: settings,
+      onDidReceiveNotificationResponse: _onNotificationTapped,
+      onDidReceiveBackgroundNotificationResponse: _onBackgroundNotificationTapped,
+    );
+
+    const androidChannel = AndroidNotificationChannel(
+      _channelId,
+      _channelName,
+      description: _channelDesc,
+      importance: Importance.high,
+      enableVibration: true,
+    );
+
+    await _plugin
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(androidChannel);
+  }
+
+  void _onNotificationTapped(NotificationResponse response) {
+    // We can handle foreground taps here
+  }
+
+  Future<void> showReminderNotification(int remainingMl) async {
+    const androidDetails = AndroidNotificationDetails(
+      _channelId,
+      _channelName,
+      channelDescription: _channelDesc,
+      importance: Importance.high,
+      priority: Priority.high,
+      actions: [
+        AndroidNotificationAction(
+          'drink_preset',
+          'Sudah Minum',
+          showsUserInterface: false,
+        ),
+        AndroidNotificationAction(
+          'snooze_60',
+          'Snooze 1 Jam',
+          showsUserInterface: false,
+        ),
+      ],
+    );
+
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+
+    const details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+
+    await _plugin.show(
+      id: 0,
+      title: '💧 Waktunya minum air!',
+      body: '\${remainingMl}ml lagi menuju target harianmu',
+      notificationDetails: details,
+    );
+  }
+
+  Future<void> scheduleAlarmAt(DateTime nextAlarm) async {
+    await _alarmService.scheduleNextAlarm(nextAlarm);
+  }
+
+  Future<void> cancelAll() async {
+    await _alarmService.cancelAlarm();
+    await _plugin.cancelAll();
+  }
+}
+
+@pragma('vm:entry-point')
+void _onBackgroundNotificationTapped(NotificationResponse response) async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  try {
+    await Hive.initFlutter();
+    Hive.registerAdapter(IntakeEntryAdapter());
+    Hive.registerAdapter(DailySummaryAdapter());
+  } catch (e) {
+    // Ignore if already initialized
+  }
+
+  try {
+    getIt.get<NotificationService>();
+  } catch (e) {
+    configureDependencies();
+  }
+
+  if (response.actionId == 'drink_preset') {
+    final addIntake = getIt<AddIntake>();
+    final settingsRepo = getIt<SettingsRepository>();
+    final settings = await settingsRepo.getSettings();
+    await addIntake(settings.preset1Ml);
+    
+    // Check if target reached and reschedule
+    final scheduleNotification = getIt<ScheduleNotification>();
+    await scheduleNotification();
+    
+    // Clear notification after action
+    final notificationService = getIt<NotificationService>();
+    await notificationService._plugin.cancel(id: 0);
+    
+  } else if (response.actionId == 'snooze_60') {
+    // Schedule alarm 1 hour from now
+    final notificationService = getIt<NotificationService>();
+    await notificationService._plugin.cancel(id: 0);
+    final nextAlarm = DateTime.now().add(const Duration(hours: 1));
+    await notificationService.scheduleAlarmAt(nextAlarm);
+  }
 }

@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.waterreminder.water_reminder"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

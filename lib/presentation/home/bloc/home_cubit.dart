@@ -52,6 +52,7 @@ class HomeCubit extends Cubit<HomeState> {
       remainingMl: remaining < 0 ? 0 : remaining,
       isPauseMode: settings.isPaused,
       isPermissionGranted: settings.notificationsEnabled, // simplistic for now
+      isFirstLaunch: settings.isFirstLaunch,
     ));
   }
 
