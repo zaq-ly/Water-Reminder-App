@@ -6,6 +6,7 @@ import 'data/models/intake_entry.dart';
 import 'data/models/daily_summary.dart';
 import 'services/alarm_service.dart';
 import 'services/notification_service.dart';
+import 'services/midnight_reset_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,6 +22,9 @@ void main() async {
 
   final notificationService = getIt<NotificationService>();
   await notificationService.init();
+
+  final midnightResetService = getIt<MidnightResetService>();
+  await midnightResetService.init();
 
   runApp(const WaterReminderApp());
 }
