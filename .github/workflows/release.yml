@@ -1,0 +1,272 @@
+# =============================================================================
+# 🚀 Auto Release & Tag — Water Reminder App
+# =============================================================================
+# Workflow ini membuat release dan tag otomatis berdasarkan:
+#   1. Push ke branch `main` dengan conventional commit messages
+#   2. Manual trigger via workflow_dispatch dengan versi custom
+#
+# Versioning menggunakan Semantic Versioning (SemVer):
+#   - feat: → MINOR bump (0.1.0 → 0.2.0)
+#   - fix:  → PATCH bump (0.1.0 → 0.1.1)
+#   - feat!: atau BREAKING CHANGE: → MAJOR bump (0.1.0 → 1.0.0)
+# =============================================================================
+
+name: "🚀 Auto Release & Tag"
+
+on:
+  # ── Trigger otomatis saat push ke main ──
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - ".github/ISSUE_TEMPLATE/**"
+      - ".gitignore"
+      - "LICENSE"
+
+  # ── Trigger manual dari GitHub UI ──
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release (e.g., v1.0.0). Kosongkan untuk auto-detect dari commits."
+        required: false
+        type: string
+      prerelease:
+        description: "Tandai sebagai pre-release?"
+        required: false
+        type: boolean
+        default: false
+      release_title:
+        description: "Custom release title (opsional)"
+        required: false
+        type: string
+
+# Hanya 1 release workflow berjalan pada satu waktu
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Job 1: Determine Version
+  # ═══════════════════════════════════════════════════════════════════════════
+  determine-version:
+    name: "🔍 Determine Version"
+    runs-on: ubuntu-latest
+    outputs:
+      new_version: ${{ steps.version.outputs.new_version }}
+      should_release: ${{ steps.version.outputs.should_release }}
+      bump_type: ${{ steps.version.outputs.bump_type }}
+      changelog: ${{ steps.changelog.outputs.changelog }}
+
+    steps:
+      - name: "📥 Checkout repository"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history untuk tag comparison
+
+      - name: "🏷️ Get latest tag"
+        id: latest_tag
+        run: |
+          # Cari tag terbaru yang mengikuti format semver
+          LATEST_TAG=$(git tag -l 'v*' --sort=-version:refname | head -n 1)
+          if [ -z "$LATEST_TAG" ]; then
+            LATEST_TAG="v0.0.0"
+            echo "No previous tags found, starting from v0.0.0"
+          else
+            echo "Latest tag: $LATEST_TAG"
+          fi
+          echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+
+      - name: "📊 Analyze commits & determine version"
+        id: version
+        run: |
+          LATEST_TAG="${{ steps.latest_tag.outputs.tag }}"
+
+          # ── Kalau manual trigger dengan versi custom ──
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            NEW_VERSION="${{ github.event.inputs.version }}"
+            # Pastikan diawali 'v'
+            if [[ ! "$NEW_VERSION" == v* ]]; then
+              NEW_VERSION="v$NEW_VERSION"
+            fi
+            echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+            echo "should_release=true" >> $GITHUB_OUTPUT
+            echo "bump_type=manual" >> $GITHUB_OUTPUT
+            echo "✅ Manual release: $NEW_VERSION"
+            exit 0
+          fi
+
+          # ── Auto-detect dari conventional commits ──
+          if [ "$LATEST_TAG" = "v0.0.0" ]; then
+            COMMITS=$(git log --oneline --pretty=format:"%s" 2>/dev/null || echo "")
+          else
+            COMMITS=$(git log "${LATEST_TAG}..HEAD" --oneline --pretty=format:"%s" 2>/dev/null || echo "")
+          fi
+
+          if [ -z "$COMMITS" ]; then
+            echo "No new commits since $LATEST_TAG"
+            echo "should_release=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "📝 Commits since $LATEST_TAG:"
+          echo "$COMMITS"
+
+          # Parse version number
+          VERSION="${LATEST_TAG#v}"
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+          MAJOR=${MAJOR:-0}
+          MINOR=${MINOR:-0}
+          PATCH=${PATCH:-0}
+
+          # Determine bump type dari commit messages
+          BUMP="none"
+
+          if echo "$COMMITS" | grep -qiE "^(feat|fix|refactor|perf|build|ci|chore|docs|style|test)(\(.+\))?!:"; then
+            BUMP="major"
+          elif echo "$COMMITS" | grep -qi "BREAKING CHANGE"; then
+            BUMP="major"
+          elif echo "$COMMITS" | grep -qiE "^feat(\(.+\))?:"; then
+            BUMP="minor"
+          elif echo "$COMMITS" | grep -qiE "^(fix|perf|refactor)(\(.+\))?:"; then
+            BUMP="patch"
+          elif echo "$COMMITS" | grep -qiE "^(build|ci|chore)(\(.+\))?:"; then
+            BUMP="patch"
+          fi
+
+          if [ "$BUMP" = "none" ]; then
+            echo "No conventional commits found — skipping release"
+            echo "should_release=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Apply bump
+          case $BUMP in
+            major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
+            minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
+            patch) PATCH=$((PATCH + 1)) ;;
+          esac
+
+          NEW_VERSION="v${MAJOR}.${MINOR}.${PATCH}"
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "should_release=true" >> $GITHUB_OUTPUT
+          echo "bump_type=$BUMP" >> $GITHUB_OUTPUT
+          echo "✅ Auto version bump ($BUMP): $LATEST_TAG → $NEW_VERSION"
+
+      - name: "📋 Generate changelog"
+        id: changelog
+        if: steps.version.outputs.should_release == 'true'
+        run: |
+          LATEST_TAG="${{ steps.latest_tag.outputs.tag }}"
+
+          if [ "$LATEST_TAG" = "v0.0.0" ]; then
+            COMMITS=$(git log --pretty=format:"- %s (%h)" 2>/dev/null || echo "")
+          else
+            COMMITS=$(git log "${LATEST_TAG}..HEAD" --pretty=format:"- %s (%h)" 2>/dev/null || echo "")
+          fi
+
+          # Kategorikan commits
+          FEATURES=""
+          FIXES=""
+          OTHERS=""
+
+          while IFS= read -r line; do
+            if echo "$line" | grep -qiE "^- feat"; then
+              FEATURES="${FEATURES}${line}"$'\n'
+            elif echo "$line" | grep -qiE "^- (fix|perf)"; then
+              FIXES="${FIXES}${line}"$'\n'
+            else
+              OTHERS="${OTHERS}${line}"$'\n'
+            fi
+          done <<< "$COMMITS"
+
+          # Build changelog
+          CHANGELOG=""
+
+          if [ -n "$FEATURES" ]; then
+            CHANGELOG="${CHANGELOG}### ✨ Features"$'\n'"${FEATURES}"$'\n'
+          fi
+
+          if [ -n "$FIXES" ]; then
+            CHANGELOG="${CHANGELOG}### 🐛 Bug Fixes & Improvements"$'\n'"${FIXES}"$'\n'
+          fi
+
+          if [ -n "$OTHERS" ]; then
+            CHANGELOG="${CHANGELOG}### 📦 Other Changes"$'\n'"${OTHERS}"$'\n'
+          fi
+
+          if [ -z "$CHANGELOG" ]; then
+            CHANGELOG="- Initial release"$'\n'
+          fi
+
+          # Write changelog ke file supaya multi-line aman
+          echo "$CHANGELOG" > /tmp/changelog.md
+          {
+            echo "changelog<<CHANGELOG_EOF"
+            cat /tmp/changelog.md
+            echo "CHANGELOG_EOF"
+          } >> $GITHUB_OUTPUT
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Job 2: Create Release & Tag
+  # ═══════════════════════════════════════════════════════════════════════════
+  create-release:
+    name: "🏷️ Create Release"
+    runs-on: ubuntu-latest
+    needs: determine-version
+    if: needs.determine-version.outputs.should_release == 'true'
+
+    steps:
+      - name: "📥 Checkout repository"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: "🏷️ Create Git tag"
+        run: |
+          NEW_VERSION="${{ needs.determine-version.outputs.new_version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$NEW_VERSION" -m "Release $NEW_VERSION"
+          git push origin "$NEW_VERSION"
+          echo "✅ Tag $NEW_VERSION created and pushed"
+
+      - name: "📦 Create GitHub Release"
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.determine-version.outputs.new_version }}
+          name: ${{ github.event.inputs.release_title || format('Release {0}', needs.determine-version.outputs.new_version) }}
+          body: |
+            ## 💧 Water Reminder App — ${{ needs.determine-version.outputs.new_version }}
+
+            **Bump type:** `${{ needs.determine-version.outputs.bump_type }}`
+            **Commit:** ${{ github.sha }}
+
+            ---
+
+            ## 📋 Changelog
+
+            ${{ needs.determine-version.outputs.changelog }}
+
+            ---
+
+            > 🤖 Release ini dibuat otomatis oleh GitHub Actions
+          draft: false
+          prerelease: ${{ github.event.inputs.prerelease == 'true' }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: "✅ Release summary"
+        run: |
+          echo "## 🚀 Release Created!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Item | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Version** | \`${{ needs.determine-version.outputs.new_version }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Bump Type** | \`${{ needs.determine-version.outputs.bump_type }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Pre-release** | \`${{ github.event.inputs.prerelease || 'false' }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Triggered by** | \`${{ github.event_name }}\` |" >> $GITHUB_STEP_SUMMARY
