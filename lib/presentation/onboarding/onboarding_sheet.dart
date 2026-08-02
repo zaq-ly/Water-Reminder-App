@@ -54,6 +54,12 @@ class _OnboardingSheetState extends State<OnboardingSheet> {
       alarmStatus = await Permission.scheduleExactAlarm.request();
     }
 
+    // Request to ignore battery optimizations (critical for MIUI/Xiaomi)
+    var batteryStatus = await Permission.ignoreBatteryOptimizations.status;
+    if (!batteryStatus.isGranted) {
+      await Permission.ignoreBatteryOptimizations.request();
+    }
+
     if (!mounted) return;
 
     if (alarmStatus.isDenied || alarmStatus.isPermanentlyDenied) {
