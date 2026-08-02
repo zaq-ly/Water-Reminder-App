@@ -49,52 +49,53 @@ class AlarmService {
     await AndroidAlarmManager.cancel(_alarmId);
   }
 
-  @pragma('vm:entry-point')
-  static Future<void> _alarmCallback() async {
-    WidgetsFlutterBinding.ensureInitialized();
-    
-    // Check if Hive is initialized (it might not be in a background isolate)
-    try {
-      await Hive.initFlutter();
-      Hive.registerAdapter(IntakeEntryAdapter());
-      Hive.registerAdapter(DailySummaryAdapter());
-    } catch (e) {
-      // Ignore if already initialized
-    }
-    
-    // Initialize DI if not already done
-    try {
-      getIt.get<NotificationService>();
-    } catch (e) {
-      configureDependencies();
-    }
+}
 
-    final settingsRepo = getIt<SettingsRepository>();
-    final getTodayIntake = getIt<GetTodayIntake>();
-    final notificationService = getIt<NotificationService>();
-    final scheduleNotification = getIt<ScheduleNotification>();
-    
-    // Ensure plugin is initialized in this background isolate
-    await notificationService.init();
+@pragma('vm:entry-point')
+Future<void> _alarmCallback() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Check if Hive is initialized (it might not be in a background isolate)
+  try {
+    await Hive.initFlutter();
+    Hive.registerAdapter(IntakeEntryAdapter());
+    Hive.registerAdapter(DailySummaryAdapter());
+  } catch (e) {
+    // Ignore if already initialized
+  }
+  
+  // Initialize DI if not already done
+  try {
+    getIt.get<NotificationService>();
+  } catch (e) {
+    configureDependencies();
+  }
 
-    debugPrint('AlarmCallback Triggered! Fetching settings...');
-    final settings = await settingsRepo.getSettings();
-    if (!settings.notificationsEnabled || settings.isPaused) {
-      debugPrint('Notifications disabled or paused. Exiting.');
-      return;
-    }
+  final settingsRepo = getIt<SettingsRepository>();
+  final getTodayIntake = getIt<GetTodayIntake>();
+  final notificationService = getIt<NotificationService>();
+  final scheduleNotification = getIt<ScheduleNotification>();
+  
+  // Ensure plugin is initialized in this background isolate
+  await notificationService.init();
 
-    final todayTotal = await getTodayIntake();
-    final remaining = settings.targetMl - todayTotal;
-    debugPrint('Today total: $todayTotal, Remaining: $remaining');
+  debugPrint('AlarmCallback Triggered! Fetching settings...');
+  final settings = await settingsRepo.getSettings();
+  if (!settings.notificationsEnabled || settings.isPaused) {
+    debugPrint('Notifications disabled or paused. Exiting.');
+    return;
+  }
 
-    if (remaining > 0) {
-      debugPrint('Showing notification...');
-      await notificationService.showReminderNotification(remaining);
-      // Chain scheduling: schedule the next one!
-      await scheduleNotification();
-    } else {
-      debugPrint('Target reached! No notification shown.');
-    }
+  final todayTotal = await getTodayIntake();
+  final remaining = settings.targetMl - todayTotal;
+  debugPrint('Today total: $todayTotal, Remaining: $remaining');
+
+  if (remaining > 0) {
+    debugPrint('Showing notification...');
+    await notificationService.showReminderNotification(remaining);
+    // Chain scheduling: schedule the next one!
+    await scheduleNotification();
+  } else {
+    debugPrint('Target reached! No notification shown.');
   }
 }
