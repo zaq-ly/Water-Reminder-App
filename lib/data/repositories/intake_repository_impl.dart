@@ -51,7 +51,7 @@ class IntakeRepositoryImpl implements IntakeRepository {
   }
 
   @override
-  Future<void> clearDailyIntakes() {
-    return _datasource.clearDailyIntakes();
+  Future<void> clearDailyIntakes(String date) {
+    return _datasource.clearDailyIntakes(date);
   }
 }

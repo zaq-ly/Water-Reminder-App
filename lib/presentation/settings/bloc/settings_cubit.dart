@@ -26,6 +26,10 @@ class SettingsCubit extends Cubit<SettingsState> {
       activeEndHour: settings.sleepTime.hour,
       activeEndMinute: settings.sleepTime.minute,
       pauseMode: settings.isPaused,
+      bodyWeightKg: settings.bodyWeightKg,
+      autoCalcTarget: settings.autoCalcTarget,
+      preset1Ml: settings.preset1Ml,
+      preset2Ml: settings.preset2Ml,
     ));
   }
 

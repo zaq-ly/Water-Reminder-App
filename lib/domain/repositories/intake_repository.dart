@@ -7,5 +7,5 @@ abstract class IntakeRepository {
   Future<DailySummary?> getDailySummary(String date);
   Future<void> updateDailySummary(DailySummary summary);
   Future<int> getTodayTotalMl();
-  Future<void> clearDailyIntakes();
+  Future<void> clearDailyIntakes(String date);
 }

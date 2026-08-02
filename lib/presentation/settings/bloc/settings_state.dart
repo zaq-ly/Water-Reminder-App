@@ -24,7 +24,7 @@ class SettingsState extends Equatable {
     this.bodyWeightKg,
     this.autoCalcTarget = false,
     this.preset1Ml = 200,
-    this.preset2Ml = 500,
+    this.preset2Ml = 300,
   });
 
   SettingsState copyWith({

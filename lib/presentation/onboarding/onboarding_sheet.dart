@@ -110,7 +110,7 @@ class _OnboardingSheetState extends State<OnboardingSheet> {
             Padding(
               padding: const EdgeInsets.only(bottom: 16.0),
               child: Text(
-                'Target Anda: \${_targetMlPreview!.toInt()} ml/hari',
+                'Target Anda: ${_targetMlPreview!.toInt()} ml/hari',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: Theme.of(context).colorScheme.secondary,

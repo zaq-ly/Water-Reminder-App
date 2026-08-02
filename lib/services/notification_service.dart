@@ -91,7 +91,7 @@ class NotificationService {
     await _plugin.show(
       id: 0,
       title: '💧 Waktunya minum air!',
-      body: '\${remainingMl}ml lagi menuju target harianmu',
+      body: '${remainingMl}ml lagi menuju target harianmu',
       notificationDetails: details,
     );
   }

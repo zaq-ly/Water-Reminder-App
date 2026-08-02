@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/router/app_router.dart';
+import '../../core/router/app_router.dart';
 import 'bloc/home_cubit.dart';
 import 'bloc/home_state.dart';
 import 'widgets/progress_ring.dart';

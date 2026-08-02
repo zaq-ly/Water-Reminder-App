@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:injectable/injectable.dart';
 import '../../services/notification_service.dart';
 import '../repositories/settings_repository.dart';

@@ -204,21 +204,23 @@ class SettingsScreen extends StatelessWidget {
           leading: const Icon(Icons.refresh, color: Colors.red),
           title: const Text('Reset Data Hari Ini', style: TextStyle(color: Colors.red)),
           onTap: () {
+            final homeCubit = context.read<HomeCubit>();
+            final scaffoldMessenger = ScaffoldMessenger.of(context);
             showDialog(
               context: context,
-              builder: (context) => AlertDialog(
+              builder: (dialogContext) => AlertDialog(
                 title: const Text('Reset Data?'),
                 content: const Text('Apakah Anda yakin ingin mereset progress air hari ini menjadi 0 ml? Data yang terhapus tidak bisa dikembalikan.'),
                 actions: [
                   TextButton(
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () => Navigator.pop(dialogContext),
                     child: const Text('Batal'),
                   ),
                   TextButton(
                     onPressed: () {
-                      context.read<HomeCubit>().resetDaily();
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
+                      homeCubit.resetDaily();
+                      Navigator.pop(dialogContext);
+                      scaffoldMessenger.showSnackBar(
                         const SnackBar(content: Text('Data hari ini berhasil direset.')),
                       );
                     },

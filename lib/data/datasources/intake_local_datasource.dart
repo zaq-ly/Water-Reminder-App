@@ -47,11 +47,16 @@ class IntakeLocalDatasource {
     await box.put(summary.date, summary);
   }
 
-  Future<void> clearDailyIntakes() async {
-    // This removes all intakes. 
-    // Usually, we only want to clear today's if we reset, or keep them for history.
-    // Let's implement it to clear all intakes for now.
-    final box = await _getIntakeBox();
-    await box.clear();
+  Future<void> clearDailyIntakes(String date) async {
+    final entryBox = await _getIntakeBox();
+    final keysToDelete = entryBox.values.where((entry) {
+      final entryDate = "${entry.timestamp.year}-${entry.timestamp.month.toString().padLeft(2, '0')}-${entry.timestamp.day.toString().padLeft(2, '0')}";
+      return entryDate == date;
+    }).map((e) => e.id).toList();
+    
+    await entryBox.deleteAll(keysToDelete);
+
+    final summaryBox = await _getSummaryBox();
+    await summaryBox.delete(date);
   }
 }

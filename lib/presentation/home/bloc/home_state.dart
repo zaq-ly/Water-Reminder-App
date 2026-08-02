@@ -25,7 +25,7 @@ class HomeState extends Equatable {
     this.isPermissionGranted = false,
     this.isFirstLaunch = true,
     this.preset1Ml = 200,
-    this.preset2Ml = 500,
+    this.preset2Ml = 300,
   });
 
   HomeState copyWith({

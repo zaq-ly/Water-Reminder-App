@@ -37,7 +37,7 @@ class HomeCubit extends Cubit<HomeState> {
     final todayTotal = await _getTodayIntake();
     
     final now = DateTime.now();
-    final date = "\${now.year}-\${now.month.toString().padLeft(2, '0')}-\${now.day.toString().padLeft(2, '0')}";
+    final date = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
     final entries = await _intakeRepository.getEntriesForDate(date);
     
     final remaining = settings.targetMl - todayTotal;
@@ -53,6 +53,8 @@ class HomeCubit extends Cubit<HomeState> {
       isPauseMode: settings.isPaused,
       isPermissionGranted: settings.notificationsEnabled, // simplistic for now
       isFirstLaunch: settings.isFirstLaunch,
+      preset1Ml: settings.preset1Ml,
+      preset2Ml: settings.preset2Ml,
     ));
   }
 
