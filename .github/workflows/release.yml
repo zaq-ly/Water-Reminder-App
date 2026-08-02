@@ -240,6 +240,9 @@ jobs:
       - name: "📦 Install Dependencies"
         run: flutter pub get
 
+      - name: "⚙️ Run Build Runner"
+        run: dart run build_runner build --delete-conflicting-outputs
+
       - name: "🔨 Build APK"
         run: flutter build apk --release
 
