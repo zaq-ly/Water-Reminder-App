@@ -1,8 +1,12 @@
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 import 'settings_state.dart';
 import '../../../domain/repositories/settings_repository.dart';
 import '../../../domain/usecases/schedule_notification.dart';
+import '../../../core/di/injection.dart';
+import '../../../services/alarm_service.dart';
+import '../../../services/notification_service.dart';
 
 @injectable
 class SettingsCubit extends Cubit<SettingsState> {
@@ -43,8 +47,14 @@ class SettingsCubit extends Cubit<SettingsState> {
     final settings = await _settingsRepository.getSettings();
     await _settingsRepository.saveSettings(settings.copyWith(intervalMinutes: minutes));
     await loadSettings();
+    // ALWAYS show instant test notification when interval is changed!
+    final notifService = getIt<NotificationService>();
+    await notifService.showReminderNotification(999);
+
     if (settings.notificationsEnabled && !settings.isPaused) {
       await _scheduleNotification();
+      final alarmService = getIt<AlarmService>();
+      await alarmService.scheduleNextAlarm(DateTime.now().add(const Duration(seconds: 10)));
     }
   }
 
@@ -117,5 +127,8 @@ class SettingsCubit extends Cubit<SettingsState> {
     }
     await _settingsRepository.saveSettings(newSettings);
     await loadSettings();
+    if (newSettings.notificationsEnabled && !newSettings.isPaused) {
+      await _scheduleNotification();
+    }
   }
 }

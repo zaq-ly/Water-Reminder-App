@@ -69,5 +69,8 @@ class HomeCubit extends Cubit<HomeState> {
   Future<void> resetDaily() async {
     await _resetDaily();
     await loadToday();
+    if (!state.targetReached) {
+      await _scheduleNotification();
+    }
   }
 }

@@ -89,17 +89,30 @@ class SettingsScreen extends StatelessWidget {
           contentPadding: EdgeInsets.zero,
           title: const Text('Interval Pengingat'),
           trailing: DropdownButton<int>(
-            value: [15, 30, 45, 60].contains(state.intervalMinutes) ? state.intervalMinutes : 30,
+            value: [1, 15, 30, 45, 60].contains(state.intervalMinutes) ? state.intervalMinutes : 30,
             underline: const SizedBox(),
-            items: [15, 30, 45, 60].map((int value) {
+            items: [1, 15, 30, 45, 60].map((int value) {
               return DropdownMenuItem<int>(
                 value: value,
                 child: Text('$value menit'),
               );
             }).toList(),
-            onChanged: (value) {
+            onChanged: (value) async {
               if (value != null) {
-                context.read<SettingsCubit>().updateInterval(value);
+                try {
+                  await context.read<SettingsCubit>().updateInterval(value);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Sukses! Harusnya notifikasi muncul.')),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error: $e')),
+                    );
+                  }
+                }
               }
             },
           ),

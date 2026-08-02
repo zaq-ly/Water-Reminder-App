@@ -48,6 +48,7 @@ dependencies:
   intl: any
   freezed_annotation: any
   uuid: any
+  path_provider: ^2.1.6
 
 dev_dependencies:
   flutter_test:
@@ -104,5 +105,5 @@ flutter:
 
 flutter_launcher_icons:
   android: true
-  ios: true
+  ios: false
   image_path: "assets/logo.png"

@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:injectable/injectable.dart';
 import 'package:flutter/widgets.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:path_provider/path_provider.dart';
 import '../core/di/injection.dart';
 import '../data/models/intake_entry.dart';
 import '../data/models/daily_summary.dart';
@@ -21,35 +23,52 @@ class NotificationService {
   static const _channelName = 'Pengingat Minum Air';
   static const _channelDesc = 'Notifikasi pengingat untuk minum air secara rutin';
 
+  Future<void> _logError(String msg) async {
+    try {
+      final directory = await getApplicationDocumentsDirectory();
+      final file = File('${directory.path}/notif_log.txt');
+      await file.writeAsString('${DateTime.now()}: $msg\n', mode: FileMode.append);
+    } catch (e) {
+      // Ignore
+    }
+  }
+
   Future<void> init() async {
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const iosSettings = DarwinInitializationSettings(
-      requestAlertPermission: false,
-      requestBadgePermission: false,
-      requestSoundPermission: false,
-    );
-    const settings = InitializationSettings(
-      android: androidSettings,
-      iOS: iosSettings,
-    );
+    try {
+      const androidSettings = AndroidInitializationSettings('@drawable/ic_notification');
+      const iosSettings = DarwinInitializationSettings(
+        requestAlertPermission: false,
+        requestBadgePermission: false,
+        requestSoundPermission: false,
+      );
+      const settings = InitializationSettings(
+        android: androidSettings,
+        iOS: iosSettings,
+      );
 
-    await _plugin.initialize(
-      settings: settings,
-      onDidReceiveNotificationResponse: _onNotificationTapped,
-      onDidReceiveBackgroundNotificationResponse: _onBackgroundNotificationTapped,
-    );
+      await _plugin.initialize(
+        settings: settings,
+        onDidReceiveNotificationResponse: _onNotificationTapped,
+        onDidReceiveBackgroundNotificationResponse: _onBackgroundNotificationTapped,
+      );
 
-    const androidChannel = AndroidNotificationChannel(
-      _channelId,
-      _channelName,
-      description: _channelDesc,
-      importance: Importance.high,
-      enableVibration: true,
-    );
+      const androidChannel = AndroidNotificationChannel(
+        _channelId,
+        _channelName,
+        description: _channelDesc,
+        importance: Importance.high,
+        enableVibration: true,
+      );
 
-    await _plugin
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(androidChannel);
+      await _plugin
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+          ?.createNotificationChannel(androidChannel);
+          
+      await _logError('init success');
+    } catch (e) {
+      await _logError('init failed: $e');
+      rethrow;
+    }
   }
 
   void _onNotificationTapped(NotificationResponse response) {
@@ -57,43 +76,50 @@ class NotificationService {
   }
 
   Future<void> showReminderNotification(int remainingMl) async {
-    const androidDetails = AndroidNotificationDetails(
-      _channelId,
-      _channelName,
-      channelDescription: _channelDesc,
-      importance: Importance.high,
-      priority: Priority.high,
-      actions: [
-        AndroidNotificationAction(
-          'drink_preset',
-          'Sudah Minum',
-          showsUserInterface: false,
-        ),
-        AndroidNotificationAction(
-          'snooze_60',
-          'Snooze 1 Jam',
-          showsUserInterface: false,
-        ),
-      ],
-    );
+    try {
+      const androidDetails = AndroidNotificationDetails(
+        _channelId,
+        _channelName,
+        channelDescription: _channelDesc,
+        importance: Importance.high,
+        priority: Priority.high,
+        actions: [
+          AndroidNotificationAction(
+            'drink_preset',
+            'Sudah Minum',
+            showsUserInterface: false,
+          ),
+          AndroidNotificationAction(
+            'snooze_60',
+            'Snooze 1 Jam',
+            showsUserInterface: false,
+          ),
+        ],
+      );
 
-    const iosDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    );
+      const iosDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      );
 
-    const details = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
+      const details = NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      );
 
-    await _plugin.show(
-      id: 0,
-      title: '💧 Waktunya minum air!',
-      body: '${remainingMl}ml lagi menuju target harianmu',
-      notificationDetails: details,
-    );
+      await _plugin.show(
+        id: 0,
+        title: '💧 Waktunya minum air!',
+        body: '${remainingMl}ml lagi menuju target harianmu',
+        notificationDetails: details,
+      );
+      
+      await _logError('showReminderNotification success');
+    } catch (e) {
+      await _logError('showReminderNotification failed: $e');
+      rethrow;
+    }
   }
 
   Future<void> scheduleAlarmAt(DateTime nextAlarm) async {
@@ -123,6 +149,9 @@ void _onBackgroundNotificationTapped(NotificationResponse response) async {
   } catch (e) {
     configureDependencies();
   }
+  
+  final notificationService = getIt<NotificationService>();
+  await notificationService.init();
 
   if (response.actionId == 'drink_preset') {
     final addIntake = getIt<AddIntake>();
@@ -135,12 +164,10 @@ void _onBackgroundNotificationTapped(NotificationResponse response) async {
     await scheduleNotification();
     
     // Clear notification after action
-    final notificationService = getIt<NotificationService>();
     await notificationService._plugin.cancel(id: 0);
     
   } else if (response.actionId == 'snooze_60') {
     // Schedule alarm 1 hour from now
-    final notificationService = getIt<NotificationService>();
     await notificationService._plugin.cancel(id: 0);
     final nextAlarm = DateTime.now().add(const Duration(hours: 1));
     await notificationService.scheduleAlarmAt(nextAlarm);

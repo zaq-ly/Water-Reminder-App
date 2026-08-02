@@ -20,15 +20,29 @@ class AlarmService {
 
   Future<void> scheduleNextAlarm(DateTime triggerAt) async {
     await AndroidAlarmManager.cancel(_alarmId);
-    await AndroidAlarmManager.oneShotAt(
-      triggerAt,
-      _alarmId,
-      _alarmCallback,
-      exact: true,
-      wakeup: true,
-      allowWhileIdle: true,
-      rescheduleOnReboot: true,
-    );
+    try {
+      await AndroidAlarmManager.oneShotAt(
+        triggerAt,
+        _alarmId,
+        _alarmCallback,
+        exact: true,
+        wakeup: true,
+        allowWhileIdle: true,
+        rescheduleOnReboot: true,
+      );
+    } catch (e) {
+      debugPrint('Failed to schedule exact alarm: $e');
+      // Fallback to inexact alarm if exact alarm permission is missing
+      await AndroidAlarmManager.oneShotAt(
+        triggerAt,
+        _alarmId,
+        _alarmCallback,
+        exact: false,
+        wakeup: true,
+        allowWhileIdle: true,
+        rescheduleOnReboot: true,
+      );
+    }
   }
 
   Future<void> cancelAlarm() async {
@@ -59,19 +73,28 @@ class AlarmService {
     final getTodayIntake = getIt<GetTodayIntake>();
     final notificationService = getIt<NotificationService>();
     final scheduleNotification = getIt<ScheduleNotification>();
+    
+    // Ensure plugin is initialized in this background isolate
+    await notificationService.init();
 
+    debugPrint('AlarmCallback Triggered! Fetching settings...');
     final settings = await settingsRepo.getSettings();
     if (!settings.notificationsEnabled || settings.isPaused) {
+      debugPrint('Notifications disabled or paused. Exiting.');
       return;
     }
 
     final todayTotal = await getTodayIntake();
     final remaining = settings.targetMl - todayTotal;
+    debugPrint('Today total: $todayTotal, Remaining: $remaining');
 
     if (remaining > 0) {
+      debugPrint('Showing notification...');
       await notificationService.showReminderNotification(remaining);
       // Chain scheduling: schedule the next one!
       await scheduleNotification();
+    } else {
+      debugPrint('Target reached! No notification shown.');
     }
   }
 }

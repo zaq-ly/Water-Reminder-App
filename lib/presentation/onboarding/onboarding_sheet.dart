@@ -47,6 +47,37 @@ class _OnboardingSheetState extends State<OnboardingSheet> {
   Future<void> _requestPermissionsAndComplete(bool useDefault) async {
     // Request notification permissions first
     await Permission.notification.request();
+    
+    // Request exact alarm (usually directs to settings on Android 12+)
+    var alarmStatus = await Permission.scheduleExactAlarm.status;
+    if (!alarmStatus.isGranted) {
+      alarmStatus = await Permission.scheduleExactAlarm.request();
+    }
+
+    if (!mounted) return;
+
+    if (alarmStatus.isDenied || alarmStatus.isPermanentlyDenied) {
+      await showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Izin Alarm Diperlukan'),
+          content: const Text('Agar pengingat bisa tepat waktu di HP Anda, tolong izinkan "Alarms & Reminders" di pengaturan.'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                openAppSettings();
+              },
+              child: const Text('Buka Pengaturan'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Nanti Saja'),
+            )
+          ],
+        )
+      );
+    }
 
     if (!mounted) return;
 
