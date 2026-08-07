@@ -1,3 +1,4 @@
+import 'dart:io' show Platform;
 import 'package:workmanager/workmanager.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter/widgets.dart';
@@ -36,8 +37,10 @@ class MidnightResetService {
   static const _taskName = 'midnight_reset';
 
   Future<void> init() async {
-    await Workmanager().initialize(callbackDispatcher);
-    await _scheduleMidnightReset();
+    if (Platform.isAndroid) {
+      await Workmanager().initialize(callbackDispatcher);
+      await _scheduleMidnightReset();
+    }
   }
 
   Future<void> _scheduleMidnightReset() async {

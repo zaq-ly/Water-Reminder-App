@@ -1,3 +1,4 @@
+import 'dart:io' show Platform;
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:injectable/injectable.dart';
 import 'package:flutter/widgets.dart';
@@ -15,10 +16,14 @@ class AlarmService {
   static const int _alarmId = 0;
 
   Future<void> init() async {
-    await AndroidAlarmManager.initialize();
+    if (Platform.isAndroid) {
+      await AndroidAlarmManager.initialize();
+    }
   }
 
   Future<void> scheduleNextAlarm(DateTime triggerAt) async {
+    if (!Platform.isAndroid) return;
+    
     await AndroidAlarmManager.cancel(_alarmId);
     try {
       await AndroidAlarmManager.oneShotAt(
@@ -46,6 +51,7 @@ class AlarmService {
   }
 
   Future<void> cancelAlarm() async {
+    if (!Platform.isAndroid) return;
     await AndroidAlarmManager.cancel(_alarmId);
   }
 
