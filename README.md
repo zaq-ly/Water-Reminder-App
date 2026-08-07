@@ -31,31 +31,14 @@ Dibangun dengan standar modern (Clean Architecture) dan antarmuka yang bersih (D
 
 ## 📥 Cara Download & Install Aplikasi
 
-Anda dapat menginstal aplikasi ini secara langsung dengan melakukan *build* dari *source code* di repositori ini.
-
-### Prasyarat
-Pastikan PC/Laptop Anda sudah terinstal:
-- [Flutter SDK](https://docs.flutter.dev/get-started/install)
-- Android Studio (untuk Android) atau Xcode (untuk iOS)
+Anda dapat mengunduh dan menginstal aplikasi ini (file `.apk` untuk Android) langsung dari halaman **Releases** di repositori ini.
 
 ### Langkah-langkah Instalasi
-1. Buka terminal/Command Prompt dan *clone* repositori ini:
-   ```bash
-   git clone https://github.com/zaq-ly/Water-Reminder-App.git
-   ```
-2. Masuk ke folder proyek:
-   ```bash
-   cd Water-Reminder-App
-   ```
-3. Unduh semua *dependencies*:
-   ```bash
-   flutter pub get
-   ```
-4. Hubungkan HP Anda menggunakan kabel USB (pastikan *USB Debugging* / *Developer Mode* sudah aktif).
-5. Jalankan perintah berikut untuk menginstal aplikasi ke HP Anda:
-   ```bash
-   flutter run
-   ```
+1. Buka halaman [Releases](https://github.com/zaq-ly/Water-Reminder-App/releases) di GitHub.
+2. Unduh file `app-release.apk` dari rilis versi terbaru.
+3. Buka file `.apk` yang sudah diunduh di HP Android Anda.
+4. Jika muncul peringatan keamanan, izinkan instalasi dari sumber tidak dikenal (*Install unknown apps*).
+5. Selesai! Aplikasi siap digunakan.
 
 ---
 
