@@ -17,20 +17,14 @@ class HomeCubit extends Cubit<HomeState> {
   final SettingsRepository _settingsRepository;
   final IntakeRepository _intakeRepository;
 
-  HomeCubit({
-    required AddIntake addIntake,
-    required GetTodayIntake getTodayIntake,
-    required ResetDaily resetDaily,
-    required ScheduleNotification scheduleNotification,
-    required SettingsRepository settingsRepository,
-    required IntakeRepository intakeRepository,
-  })  : _addIntake = addIntake,
-        _getTodayIntake = getTodayIntake,
-        _resetDaily = resetDaily,
-        _scheduleNotification = scheduleNotification,
-        _settingsRepository = settingsRepository,
-        _intakeRepository = intakeRepository,
-        super(const HomeState());
+  HomeCubit(
+    this._addIntake,
+    this._getTodayIntake,
+    this._resetDaily,
+    this._scheduleNotification,
+    this._settingsRepository,
+    this._intakeRepository,
+  ) : super(const HomeState());
 
   Future<void> loadToday() async {
     final settings = await _settingsRepository.getSettings();

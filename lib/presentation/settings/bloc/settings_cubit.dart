@@ -12,12 +12,10 @@ class SettingsCubit extends Cubit<SettingsState> {
   final SettingsRepository _settingsRepository;
   final ScheduleNotification _scheduleNotification;
 
-  SettingsCubit({
-    required SettingsRepository settingsRepository,
-    required ScheduleNotification scheduleNotification,
-  })  : _settingsRepository = settingsRepository,
-        _scheduleNotification = scheduleNotification,
-        super(const SettingsState());
+  SettingsCubit(
+    this._settingsRepository,
+    this._scheduleNotification,
+  ) : super(const SettingsState());
 
   Future<void> loadSettings() async {
     final settings = await _settingsRepository.getSettings();
