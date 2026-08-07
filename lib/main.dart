@@ -11,20 +11,38 @@ import 'services/midnight_reset_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  await Hive.initFlutter();
-  Hive.registerAdapter(IntakeEntryAdapter());
-  Hive.registerAdapter(DailySummaryAdapter());
-  
-  configureDependencies();
+  try {
+    await Hive.initFlutter();
+    Hive.registerAdapter(IntakeEntryAdapter());
+    Hive.registerAdapter(DailySummaryAdapter());
+    
+    configureDependencies();
 
-  final alarmService = getIt<AlarmService>();
-  await alarmService.init();
+    final alarmService = getIt<AlarmService>();
+    await alarmService.init();
 
-  final notificationService = getIt<NotificationService>();
-  await notificationService.init();
+    final notificationService = getIt<NotificationService>();
+    await notificationService.init();
 
-  final midnightResetService = getIt<MidnightResetService>();
-  await midnightResetService.init();
+    final midnightResetService = getIt<MidnightResetService>();
+    await midnightResetService.init();
 
-  runApp(const WaterReminderApp());
+    runApp(const WaterReminderApp());
+  } catch (e, stackTrace) {
+    runApp(
+      MaterialApp(
+        home: Scaffold(
+          body: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: Text(
+                'Startup Error:\n$e\n\n$stackTrace',
+                style: const TextStyle(color: Colors.red, fontSize: 12),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

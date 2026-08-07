@@ -1,7 +1,5 @@
 # AGENTS.md — Water Reminder App
 
-Read and apply: C:\Users\ACER\.gemini\config\AGENTS.md
-
 > Rules dan guidelines untuk semua AI agents yang bekerja di project ini.
 
 ---
