@@ -35,7 +35,7 @@ class NotificationService {
 
   Future<void> init() async {
     try {
-      const androidSettings = AndroidInitializationSettings('@drawable/ic_notification');
+      const androidSettings = AndroidInitializationSettings('ic_notification');
       const iosSettings = DarwinInitializationSettings(
         requestAlertPermission: false,
         requestBadgePermission: false,
