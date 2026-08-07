@@ -1,5 +1,6 @@
 import 'package:injectable/injectable.dart';
 import '../../domain/repositories/intake_repository.dart';
+import '../../domain/repositories/settings_repository.dart';
 import '../datasources/intake_local_datasource.dart';
 import '../models/intake_entry.dart';
 import '../models/daily_summary.dart';
@@ -7,8 +8,9 @@ import '../models/daily_summary.dart';
 @LazySingleton(as: IntakeRepository)
 class IntakeRepositoryImpl implements IntakeRepository {
   final IntakeLocalDatasource _datasource;
+  final SettingsRepository _settingsRepository;
 
-  IntakeRepositoryImpl(this._datasource);
+  IntakeRepositoryImpl(this._datasource, this._settingsRepository);
 
   @override
   Future<void> addIntake(IntakeEntry entry) async {
@@ -20,9 +22,8 @@ class IntakeRepositoryImpl implements IntakeRepository {
     if (summary != null) {
       summary = summary.copyWith(totalMl: summary.totalMl + entry.amountMl);
     } else {
-      // Get target from settings theoretically, but for now we'll pass 0 or a default
-      // A better way is handled in UseCases where we have access to SettingsRepository
-      summary = DailySummary(date: date, totalMl: entry.amountMl, targetMl: 2500); 
+      final settings = await _settingsRepository.getSettings();
+      summary = DailySummary(date: date, totalMl: entry.amountMl, targetMl: settings.targetMl);
     }
     await _datasource.updateDailySummary(summary);
   }
@@ -55,3 +56,4 @@ class IntakeRepositoryImpl implements IntakeRepository {
     return _datasource.clearDailyIntakes(date);
   }
 }
+

@@ -130,6 +130,10 @@ class NotificationService {
     await _alarmService.cancelAlarm();
     await _plugin.cancelAll();
   }
+
+  Future<void> cancelById(int id) async {
+    await _plugin.cancel(id: id);
+  }
 }
 
 @pragma('vm:entry-point')
@@ -164,11 +168,11 @@ void _onBackgroundNotificationTapped(NotificationResponse response) async {
     await scheduleNotification();
     
     // Clear notification after action
-    await notificationService._plugin.cancel(id: 0);
+    await notificationService.cancelById(0);
     
   } else if (response.actionId == 'snooze_60') {
     // Schedule alarm 1 hour from now
-    await notificationService._plugin.cancel(id: 0);
+    await notificationService.cancelById(0);
     final nextAlarm = DateTime.now().add(const Duration(hours: 1));
     await notificationService.scheduleAlarmAt(nextAlarm);
   }

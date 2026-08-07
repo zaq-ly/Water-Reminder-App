@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+const _sentinel = Object();
+
 class SettingsState extends Equatable {
   final int targetMl;
   final int intervalMinutes;
@@ -15,7 +17,7 @@ class SettingsState extends Equatable {
 
   const SettingsState({
     this.targetMl = 2500,
-    this.intervalMinutes = 90,
+    this.intervalMinutes = 30,
     this.activeStartHour = 8,
     this.activeStartMinute = 0,
     this.activeEndHour = 22,
@@ -35,7 +37,7 @@ class SettingsState extends Equatable {
     int? activeEndHour,
     int? activeEndMinute,
     bool? pauseMode,
-    double? bodyWeightKg,
+    Object? bodyWeightKg = _sentinel,
     bool? autoCalcTarget,
     int? preset1Ml,
     int? preset2Ml,
@@ -48,7 +50,7 @@ class SettingsState extends Equatable {
       activeEndHour: activeEndHour ?? this.activeEndHour,
       activeEndMinute: activeEndMinute ?? this.activeEndMinute,
       pauseMode: pauseMode ?? this.pauseMode,
-      bodyWeightKg: bodyWeightKg ?? this.bodyWeightKg,
+      bodyWeightKg: bodyWeightKg == _sentinel ? this.bodyWeightKg : bodyWeightKg as double?,
       autoCalcTarget: autoCalcTarget ?? this.autoCalcTarget,
       preset1Ml: preset1Ml ?? this.preset1Ml,
       preset2Ml: preset2Ml ?? this.preset2Ml,

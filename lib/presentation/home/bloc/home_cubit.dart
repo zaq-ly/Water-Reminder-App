@@ -61,16 +61,13 @@ class HomeCubit extends Cubit<HomeState> {
   Future<void> addIntake(int ml) async {
     await _addIntake(ml);
     await loadToday();
-    if (!state.targetReached) {
-      await _scheduleNotification();
-    }
+    // ScheduleNotification handles all cases: cancels if target reached, reschedules if not
+    await _scheduleNotification();
   }
 
   Future<void> resetDaily() async {
     await _resetDaily();
     await loadToday();
-    if (!state.targetReached) {
-      await _scheduleNotification();
-    }
+    await _scheduleNotification();
   }
 }

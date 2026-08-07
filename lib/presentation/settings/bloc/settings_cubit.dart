@@ -1,11 +1,10 @@
-
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 import 'settings_state.dart';
 import '../../../domain/repositories/settings_repository.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../../domain/usecases/schedule_notification.dart';
 import '../../../core/di/injection.dart';
-import '../../../services/alarm_service.dart';
 import '../../../services/notification_service.dart';
 
 @injectable
@@ -47,14 +46,19 @@ class SettingsCubit extends Cubit<SettingsState> {
     final settings = await _settingsRepository.getSettings();
     await _settingsRepository.saveSettings(settings.copyWith(intervalMinutes: minutes));
     await loadSettings();
-    // ALWAYS show instant test notification when interval is changed!
-    final notifService = getIt<NotificationService>();
-    await notifService.showReminderNotification(999);
+    
+    // Request exact alarm & battery optimization bypass here so user sees it when changing interval!
+    var alarmStatus = await Permission.scheduleExactAlarm.status;
+    if (!alarmStatus.isGranted) {
+      await Permission.scheduleExactAlarm.request();
+    }
+    var batteryStatus = await Permission.ignoreBatteryOptimizations.status;
+    if (!batteryStatus.isGranted) {
+      await Permission.ignoreBatteryOptimizations.request();
+    }
 
     if (settings.notificationsEnabled && !settings.isPaused) {
       await _scheduleNotification();
-      final alarmService = getIt<AlarmService>();
-      await alarmService.scheduleNextAlarm(DateTime.now().add(const Duration(seconds: 10)));
     }
   }
 
@@ -65,9 +69,11 @@ class SettingsCubit extends Cubit<SettingsState> {
     await loadSettings();
     
     if (newStatus) {
-      // Pause active, cancel alarms
+      // Pause active → cancel all pending alarms & notifications
+      final notifService = getIt<NotificationService>();
+      await notifService.cancelAll();
     } else {
-      // Resume, reschedule alarms
+      // Resume → reschedule alarms
       await _scheduleNotification();
     }
   }
